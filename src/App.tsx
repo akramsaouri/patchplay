@@ -152,7 +152,7 @@ function App() {
             animationFillMode: 'forwards',
           }}
         >
-          Turn any GitHub PR into a shareable video
+          Turn any GitHub PR into a story
         </p>
 
         {state === 'input' && (
