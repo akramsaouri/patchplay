@@ -16,10 +16,82 @@ interface GitHubFile {
   patch?: string;
 }
 
+interface OpenAISummary {
+  headline: string;
+  vibe: 'feature' | 'fix' | 'refactor' | 'docs' | 'chore';
+  bullets: string[];
+  emoji: string;
+  accentColor: string;
+  tone: 'celebratory' | 'relief' | 'technical' | 'minor';
+}
+
 function parsePrUrl(url: string): { owner: string; repo: string; number: number } | null {
   const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
   if (!match) return null;
   return { owner: match[1], repo: match[2], number: parseInt(match[3], 10) };
+}
+
+async function generateSummary(pr: GitHubPR, files: GitHubFile[]): Promise<OpenAISummary> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY not configured');
+  }
+
+  // Truncate patches to manage tokens
+  const truncatedFiles = files.slice(0, 10).map((f) => ({
+    filename: f.filename,
+    additions: f.additions,
+    deletions: f.deletions,
+    patch: f.patch?.slice(0, 500),
+  }));
+
+  const prompt = `Analyze this GitHub PR and generate a social media video summary.
+
+PR Title: ${pr.title}
+PR Description: ${pr.body?.slice(0, 1000) || 'No description'}
+Files Changed: ${files.length}
+Total Additions: ${pr.additions}
+Total Deletions: ${pr.deletions}
+
+Changed files:
+${truncatedFiles.map((f) => `- ${f.filename} (+${f.additions}/-${f.deletions})`).join('\n')}
+
+Generate a JSON response with:
+- headline: A catchy, short headline (max 10 words) that captures the essence of this PR
+- vibe: One of "feature", "fix", "refactor", "docs", "chore"
+- bullets: Array of 3-5 key points (max 10 words each) explaining what changed
+- emoji: A single emoji that represents this PR
+- accentColor: A hex color that matches the vibe (bright, playful colors work best)
+- tone: One of "celebratory" (new features), "relief" (bug fixes), "technical" (refactors), "minor" (small changes)
+
+Respond with ONLY valid JSON, no markdown.`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 500,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('No content in OpenAI response');
+  }
+
+  return JSON.parse(content);
 }
 
 async function fetchGitHubPR(owner: string, repo: string, number: number) {
@@ -78,19 +150,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(result.status).json({ error: result.error });
   }
 
-  // For now, return just the meta - we'll add OpenAI in the next task
-  return res.status(200).json({
-    meta: result.meta,
-    // Placeholder until OpenAI is added
-    summary: {
-      headline: result.pr.title,
-      vibe: 'feature',
-      bullets: ['Placeholder bullet 1', 'Placeholder bullet 2', 'Placeholder bullet 3'],
-      emoji: '✨',
-    },
-    style: {
-      accentColor: '#8b5cf6',
-      tone: 'celebratory',
-    },
-  });
+  const { pr, files } = result;
+
+  const meta = {
+    repoName: `${parsed.owner}/${parsed.repo}`,
+    prNumber: parsed.number,
+    prTitle: pr.title,
+    author: pr.user.login,
+    authorAvatar: pr.user.avatar_url,
+    filesChanged: pr.changed_files,
+    additions: pr.additions,
+    deletions: pr.deletions,
+  };
+
+  try {
+    const aiSummary = await generateSummary(pr, files);
+
+    return res.status(200).json({
+      meta,
+      summary: {
+        headline: aiSummary.headline,
+        vibe: aiSummary.vibe,
+        bullets: aiSummary.bullets,
+        emoji: aiSummary.emoji,
+      },
+      style: {
+        accentColor: aiSummary.accentColor,
+        tone: aiSummary.tone,
+      },
+    });
+  } catch (error) {
+    // Return partial data if OpenAI fails
+    console.error('OpenAI error:', error);
+    return res.status(200).json({
+      meta,
+      summary: {
+        headline: pr.title,
+        vibe: 'feature',
+        bullets: ['Check out this pull request', 'See the changes for details'],
+        emoji: '📝',
+      },
+      style: {
+        accentColor: '#8b5cf6',
+        tone: 'technical',
+      },
+    });
+  }
 }
