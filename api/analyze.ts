@@ -39,8 +39,8 @@ function getMidnightUTCTimestamp(): number {
 }
 
 async function checkRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number; resetAt: number } | null> {
-  if (!redis) {
-    return null; // Rate limiting disabled when Redis not configured
+  if (process.env.DISABLE_RATE_LIMIT === 'true' || !redis) {
+    return null; // Rate limiting disabled
   }
 
   const key = `ratelimit:analyze:${ip}`;
