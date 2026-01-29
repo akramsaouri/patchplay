@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import type { ComponentType } from 'react';
-import { Player } from '@remotion/player';
-import { PatchPlayComposition, calculateDuration } from './video/Composition';
 import { InputForm } from './components/InputForm';
 import { LoadingState } from './components/LoadingState';
+import { VideoModal } from './components/VideoModal';
 import { analyzePR } from './lib/api';
 import type { VideoScript } from './types';
 
@@ -45,6 +43,7 @@ function App() {
   const [state, setState] = useState<AppState>('input');
   const [videoData, setVideoData] = useState<VideoScript | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSubmit = async (url: string) => {
     setState('loading');
@@ -54,6 +53,7 @@ function App() {
       const data = await analyzePR(url);
       setVideoData(data);
       setState('preview');
+      setIsModalOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setState('input');
@@ -64,6 +64,7 @@ function App() {
     setState('input');
     setVideoData(null);
     setError(null);
+    setIsModalOpen(false);
   };
 
   return (
@@ -186,117 +187,127 @@ function App() {
         {state === 'loading' && <LoadingState />}
 
         {state === 'preview' && videoData && (
-          <div
-            style={{
-              width: '100%',
-              animation: 'scale-in 0.5s ease-out forwards',
-            }}
-          >
-            {/* Video container with glow effect */}
-            <div
-              style={{
-                position: 'relative',
-                borderRadius: 20,
-                overflow: 'hidden',
-                boxShadow: `
-                  0 0 0 1px rgba(139, 92, 246, 0.2),
-                  0 20px 50px -10px rgba(0, 0, 0, 0.5),
-                  0 0 100px -20px rgba(139, 92, 246, 0.3)
-                `,
-              }}
-            >
-              <Player
-                component={PatchPlayComposition as unknown as ComponentType<Record<string, unknown>>}
-                inputProps={videoData as unknown as Record<string, unknown>}
-                durationInFrames={calculateDuration(videoData.summary.bullets.length)}
-                compositionWidth={1920}
-                compositionHeight={1080}
-                fps={30}
+          <>
+            <VideoModal
+              videoData={videoData}
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+            />
+
+            {/* Video info card - visible when modal is closed */}
+            {!isModalOpen && (
+              <div
                 style={{
                   width: '100%',
-                  borderRadius: 20,
+                  maxWidth: 500,
+                  animation: 'fade-up 0.4s ease-out',
                 }}
-                controls
-              />
-            </div>
-
-            {/* Video info card */}
-            <div
-              style={{
-                marginTop: 24,
-                padding: '20px 24px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: 16,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 16,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <img
-                  src={videoData.meta.authorAvatar}
-                  alt={videoData.meta.author}
+              >
+                <div
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    border: '2px solid rgba(139, 92, 246, 0.5)',
+                    padding: '24px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 20,
                   }}
-                />
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
-                      fontWeight: 600,
-                      fontSize: 14,
-                      color: 'white',
-                    }}
-                  >
-                    {videoData.meta.repoName}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <img
+                      src={videoData.meta.authorAvatar}
+                      alt={videoData.meta.author}
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        border: '2px solid rgba(139, 92, 246, 0.5)',
+                      }}
+                    />
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
+                          fontWeight: 600,
+                          fontSize: 16,
+                          color: 'white',
+                        }}
+                      >
+                        {videoData.meta.repoName}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          color: 'rgba(255, 255, 255, 0.4)',
+                        }}
+                      >
+                        PR #{videoData.meta.prNumber} by @{videoData.meta.author}
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: 'rgba(255, 255, 255, 0.4)',
-                    }}
-                  >
-                    PR #{videoData.meta.prNumber} by @{videoData.meta.author}
+
+                  <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      style={{
+                        flex: 1,
+                        padding: '12px 20px',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        border: 'none',
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 20px -4px rgba(139, 92, 246, 0.5)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      Watch again
+                    </button>
+                    <button
+                      onClick={handleReset}
+                      style={{
+                        flex: 1,
+                        padding: '12px 20px',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: 10,
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+                      }}
+                    >
+                      New PR
+                    </button>
                   </div>
                 </div>
               </div>
-
-              <button
-                onClick={handleReset}
-                style={{
-                  padding: '10px 20px',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: 10,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-                }}
-              >
-                Generate another
-              </button>
-            </div>
-          </div>
+            )}
+          </>
         )}
       </div>
 

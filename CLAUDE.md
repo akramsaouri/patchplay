@@ -45,3 +45,7 @@ vercel dev       # Full app with API (requires .env.local with OPENAI_API_KEY)
 ## Environment Variables
 
 - `OPENAI_API_KEY`: Required for API functionality (set in `.env.local` locally, Vercel dashboard for production)
+
+## Workflow
+
+- Always run `npm run lint` before finishing any task to verify no lint errors were introduced
