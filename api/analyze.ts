@@ -10,10 +10,12 @@ config({ path: '.env.local' });
 
 const RATE_LIMIT = 5;
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
 
 function getSecondsUntilMidnightUTC(): number {
   const now = new Date();
@@ -36,7 +38,11 @@ function getMidnightUTCTimestamp(): number {
   ) / 1000;
 }
 
-async function checkRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+async function checkRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number; resetAt: number } | null> {
+  if (!redis) {
+    return null; // Rate limiting disabled when Redis not configured
+  }
+
   const key = `ratelimit:analyze:${ip}`;
   const resetAt = getMidnightUTCTimestamp();
 
@@ -164,18 +170,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ? forwarded.split(',')[0].trim()
     : req.socket?.remoteAddress ?? 'unknown';
 
-  // Check rate limit
+  // Check rate limit (skipped if Redis not configured)
   const rateLimit = await checkRateLimit(ip);
 
-  res.setHeader('X-RateLimit-Limit', RATE_LIMIT);
-  res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
-  res.setHeader('X-RateLimit-Reset', rateLimit.resetAt);
+  if (rateLimit) {
+    res.setHeader('X-RateLimit-Limit', RATE_LIMIT);
+    res.setHeader('X-RateLimit-Remaining', rateLimit.remaining);
+    res.setHeader('X-RateLimit-Reset', rateLimit.resetAt);
 
-  if (!rateLimit.allowed) {
-    return res.status(429).json({
-      error: 'Rate limit exceeded. You can generate 5 videos per day.',
-      resetAt: new Date(rateLimit.resetAt * 1000).toISOString(),
-    });
+    if (!rateLimit.allowed) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. You can generate 5 videos per day.',
+        resetAt: new Date(rateLimit.resetAt * 1000).toISOString(),
+      });
+    }
   }
 
   const { prUrl } = req.body;
