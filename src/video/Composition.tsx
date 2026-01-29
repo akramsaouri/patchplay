@@ -1,24 +1,21 @@
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Sequence } from 'remotion';
 import type { VideoScript } from '../types';
+import { IntroScene } from './scenes/IntroScene';
 
 export const PatchPlayComposition: React.FC<VideoScript> = (props) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { meta, style } = props;
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: '#1a1a2e',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
-      <h1 style={{ color: 'white', fontSize: 48 }}>
-        {props.meta.repoName} #{props.meta.prNumber}
-      </h1>
-      <p style={{ color: '#888', fontSize: 24 }}>
-        Frame {frame} / {durationInFrames} @ {fps}fps
-      </p>
+    <AbsoluteFill style={{ backgroundColor: '#1a1a2e' }}>
+      <Sequence from={0} durationInFrames={90}>
+        <IntroScene
+          repoName={meta.repoName}
+          prNumber={meta.prNumber}
+          author={meta.author}
+          authorAvatar={meta.authorAvatar}
+          accentColor={style.accentColor}
+        />
+      </Sequence>
     </AbsoluteFill>
   );
 };
