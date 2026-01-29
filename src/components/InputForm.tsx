@@ -10,14 +10,14 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const isValid = url.trim().includes('github.com') && url.includes('/pull/');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (url.trim()) {
+    if (isValid) {
       onSubmit(url.trim());
     }
   };
-
-  const isValid = url.trim().includes('github.com') && url.includes('/pull/');
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%' }}>
@@ -92,7 +92,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           {/* Submit button inside input */}
           <button
             type="submit"
-            disabled={isLoading || !url.trim()}
+            disabled={isLoading || !isValid}
             style={{
               padding: '14px 28px',
               fontSize: 15,
@@ -100,26 +100,26 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
               fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
               border: 'none',
               borderRadius: 12,
-              background: url.trim()
+              background: isValid
                 ? 'linear-gradient(135deg, #8B5CF6 0%, #FF6B6B 100%)'
                 : 'rgba(255, 255, 255, 0.1)',
-              color: url.trim() ? 'white' : 'rgba(255, 255, 255, 0.4)',
-              cursor: isLoading || !url.trim() ? 'not-allowed' : 'pointer',
+              color: isValid ? 'white' : 'rgba(255, 255, 255, 0.4)',
+              cursor: isLoading || !isValid ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s ease',
-              transform: url.trim() ? 'scale(1)' : 'scale(0.98)',
-              boxShadow: url.trim()
+              transform: isValid ? 'scale(1)' : 'scale(0.98)',
+              boxShadow: isValid
                 ? '0 4px 20px rgba(139, 92, 246, 0.4)'
                 : 'none',
             }}
             onMouseEnter={(e) => {
-              if (url.trim() && !isLoading) {
+              if (isValid && !isLoading) {
                 e.currentTarget.style.transform = 'scale(1.02)';
                 e.currentTarget.style.boxShadow = '0 6px 30px rgba(139, 92, 246, 0.5)';
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = url.trim() ? 'scale(1)' : 'scale(0.98)';
-              e.currentTarget.style.boxShadow = url.trim()
+              e.currentTarget.style.transform = isValid ? 'scale(1)' : 'scale(0.98)';
+              e.currentTarget.style.boxShadow = isValid
                 ? '0 4px 20px rgba(139, 92, 246, 0.4)'
                 : 'none';
             }}
