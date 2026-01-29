@@ -1,4 +1,4 @@
-import { AbsoluteFill, Sequence } from 'remotion';
+import { AbsoluteFill, Audio, Sequence } from 'remotion';
 import type { VideoScript } from '../types';
 import { IntroScene } from './scenes/IntroScene';
 import { HeadlineScene } from './scenes/HeadlineScene';
@@ -20,6 +20,7 @@ export const PatchPlayComposition: React.FC<VideoScript> = (props) => {
   return (
     <AbsoluteFill style={{ backgroundColor: '#1a1a2e' }}>
       <Sequence from={0} durationInFrames={INTRO_DURATION}>
+        <Audio src="/audio/whoosh.mp3" volume={0.6} />
         <IntroScene
           repoName={meta.repoName}
           prNumber={meta.prNumber}
@@ -30,6 +31,7 @@ export const PatchPlayComposition: React.FC<VideoScript> = (props) => {
       </Sequence>
 
       <Sequence from={INTRO_DURATION} durationInFrames={HEADLINE_DURATION}>
+        <Audio src="/audio/impact.mp3" volume={0.5} />
         <HeadlineScene
           headline={summary.headline}
           emoji={summary.emoji}
@@ -44,11 +46,13 @@ export const PatchPlayComposition: React.FC<VideoScript> = (props) => {
           from={bulletStart + i * BULLET_DURATION}
           durationInFrames={BULLET_DURATION}
         >
+          <Audio src="/audio/pop.mp3" volume={0.4} />
           <BulletScene text={bullet} index={i} accentColor={style.accentColor} />
         </Sequence>
       ))}
 
       <Sequence from={outroStart} durationInFrames={OUTRO_DURATION}>
+        <Audio src="/audio/chime.mp3" volume={0.5} />
         <OutroScene
           repoName={meta.repoName}
           filesChanged={meta.filesChanged}
