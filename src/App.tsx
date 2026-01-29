@@ -322,9 +322,32 @@ function App() {
           fontSize: 13,
           color: 'rgba(255, 255, 255, 0.25)',
           fontFamily: "'DM Sans', system-ui, sans-serif",
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
         }}
       >
-        Paste a PR link and watch the magic happen
+        <span>Paste a PR link and watch the magic happen</span>
+        <a
+          href="https://github.com/akramsaouri"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: 'rgba(255, 255, 255, 0.2)',
+            textDecoration: 'none',
+            fontSize: 12,
+            transition: 'color 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'rgba(139, 92, 246, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.2)';
+          }}
+        >
+          by @akramsaouri
+        </a>
       </div>
     </div>
   );
