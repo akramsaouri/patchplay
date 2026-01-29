@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { config } from 'dotenv';
+import { generateText, Output } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
 
 // Load .env.local for local development
 config({ path: '.env.local' });
@@ -20,14 +23,16 @@ interface GitHubFile {
   patch?: string;
 }
 
-interface OpenAISummary {
-  headline: string;
-  vibe: 'feature' | 'fix' | 'refactor' | 'docs' | 'chore';
-  bullets: string[];
-  emoji: string;
-  accentColor: string;
-  tone: 'celebratory' | 'relief' | 'technical' | 'minor';
-}
+const summarySchema = z.object({
+  headline: z.string().describe('A catchy, short headline (max 10 words) that captures the essence of this PR'),
+  vibe: z.enum(['feature', 'fix', 'refactor', 'docs', 'chore']),
+  bullets: z.array(z.string()).min(3).max(5).describe('Key points (max 10 words each) explaining what changed'),
+  emoji: z.string().describe('A single emoji that represents this PR'),
+  accentColor: z.string().describe('A hex color that matches the vibe (bright, playful colors work best)'),
+  tone: z.enum(['celebratory', 'relief', 'technical', 'minor']).describe('celebratory for new features, relief for bug fixes, technical for refactors, minor for small changes'),
+});
+
+type OpenAISummary = z.infer<typeof summarySchema>;
 
 function parsePrUrl(url: string): { owner: string; repo: string; number: number } | null {
   const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)/);
@@ -36,11 +41,6 @@ function parsePrUrl(url: string): { owner: string; repo: string; number: number 
 }
 
 async function generateSummary(pr: GitHubPR, files: GitHubFile[]): Promise<OpenAISummary> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
   // Truncate patches to manage tokens
   const truncatedFiles = files.slice(0, 10).map((f) => ({
     filename: f.filename,
@@ -58,46 +58,20 @@ Total Additions: ${pr.additions}
 Total Deletions: ${pr.deletions}
 
 Changed files:
-${truncatedFiles.map((f) => `- ${f.filename} (+${f.additions}/-${f.deletions})`).join('\n')}
+${truncatedFiles.map((f) => `- ${f.filename} (+${f.additions}/-${f.deletions})`).join('\n')}`;
 
-Generate a JSON response with:
-- headline: A catchy, short headline (max 10 words) that captures the essence of this PR
-- vibe: One of "feature", "fix", "refactor", "docs", "chore"
-- bullets: Array of 3-5 key points (max 10 words each) explaining what changed
-- emoji: A single emoji that represents this PR
-- accentColor: A hex color that matches the vibe (bright, playful colors work best)
-- tone: One of "celebratory" (new features), "relief" (bug fixes), "technical" (refactors), "minor" (small changes)
-
-Respond with ONLY valid JSON, no markdown.`;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-5.2',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_completion_tokens: 500,
-    }),
+  const { output } = await generateText({
+    model: openai('gpt-5.2'),
+    output: Output.object({ schema: summarySchema }),
+    prompt,
+    temperature: 0.7,
   });
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    console.error('OpenAI API error details:', JSON.stringify(errorBody, null, 2));
-    throw new Error(`OpenAI API error: ${response.status} - ${errorBody?.error?.message || 'Unknown error'}`);
+  if (!output) {
+    throw new Error('Failed to generate summary');
   }
 
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error('No content in OpenAI response');
-  }
-
-  return JSON.parse(content);
+  return output;
 }
 
 async function fetchGitHubPR(owner: string, repo: string, number: number) {
