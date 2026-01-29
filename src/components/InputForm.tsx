@@ -167,6 +167,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
+          alignItems: 'center',
           gap: 8,
         }}
       >
@@ -174,8 +175,10 @@ export const InputForm: React.FC<InputFormProps> = ({ onSubmit, isLoading }) => 
           Try:
         </span>
         {[
-          { label: 'React', url: 'https://github.com/facebook/react/pull/25774' },
-          { label: 'Next.js', url: 'https://github.com/vercel/next.js/pull/60000' },
+          { label: 'The icons we all love - remixicon', url: 'https://github.com/shadcn-ui/ui/pull/9156' },
+          { label: 'feat: Bun shell', url: 'https://github.com/oven-sh/bun/pull/7748' },
+          { label: 'feat: bun patch', url: 'https://github.com/oven-sh/bun/pull/11470' },
+          { label: 'Add support for server-side tools', url: 'https://github.com/anthropics/anthropic-sdk-python/pull/1086' },
         ].map((example) => (
           <button
             key={example.label}
