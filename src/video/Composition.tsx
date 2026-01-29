@@ -4,15 +4,12 @@ import { IntroScene } from './scenes/IntroScene';
 import { HeadlineScene } from './scenes/HeadlineScene';
 import { BulletScene } from './scenes/BulletScene';
 import { OutroScene } from './scenes/OutroScene';
-
-const INTRO_DURATION = 90; // 3s at 30fps
-const HEADLINE_DURATION = 105; // 3.5s
-const BULLET_DURATION = 75; // 2.5s each
-const OUTRO_DURATION = 90; // 3s
-
-export const calculateDuration = (bulletCount: number): number => {
-  return INTRO_DURATION + HEADLINE_DURATION + bulletCount * BULLET_DURATION + OUTRO_DURATION;
-};
+import {
+  INTRO_DURATION,
+  HEADLINE_DURATION,
+  BULLET_DURATION,
+  OUTRO_DURATION,
+} from './durations';
 
 export const PatchPlayComposition: React.FC<VideoScript> = (props) => {
   const { meta, summary, style } = props;
