@@ -77,15 +77,17 @@ Respond with ONLY valid JSON, no markdown.`;
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.2',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      max_tokens: 500,
+      max_completion_tokens: 500,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
+    const errorBody = await response.json().catch(() => ({}));
+    console.error('OpenAI API error details:', JSON.stringify(errorBody, null, 2));
+    throw new Error(`OpenAI API error: ${response.status} - ${errorBody?.error?.message || 'Unknown error'}`);
   }
 
   const data = await response.json();
