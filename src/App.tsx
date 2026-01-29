@@ -1,5 +1,6 @@
 import { Player } from '@remotion/player';
-import { PatchPlayComposition } from './video/Composition';
+import type { ComponentType } from 'react';
+import { PatchPlayComposition, calculateDuration } from './video/Composition';
 import type { VideoScript } from './types';
 
 const mockData: VideoScript = {
@@ -30,13 +31,15 @@ const mockData: VideoScript = {
 };
 
 function App() {
+  const duration = calculateDuration(mockData.summary.bullets.length);
+
   return (
     <div style={{ padding: 40 }}>
       <h1>PatchPlay</h1>
       <Player
-        component={PatchPlayComposition}
-        inputProps={mockData}
-        durationInFrames={450}
+        component={PatchPlayComposition as unknown as ComponentType<Record<string, unknown>>}
+        inputProps={mockData as unknown as Record<string, unknown>}
+        durationInFrames={duration}
         compositionWidth={1920}
         compositionHeight={1080}
         fps={30}
