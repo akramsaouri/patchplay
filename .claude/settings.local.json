@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add basic Remotion Player with mock data\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/akram.saouri@m10s.io/code/personal/patchplay log --oneline -5)",
+      "Bash(git -C /Users/akram.saouri@m10s.io/code/personal/patchplay add src/video/scenes/IntroScene.tsx src/video/Composition.tsx)",
+      "Bash(git -C /Users/akram.saouri@m10s.io/code/personal/patchplay commit -m \"$\\(cat <<''EOF''\nfeat: add animated IntroScene with spring animations\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C /Users/akram.saouri@m10s.io/code/personal/patchplay status)",
+      "Bash(npm run lint)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add BulletScene with 4 layout variants\n\nAdd four distinct layout variants for visual variety in bullet scenes:\n- LayoutA: icon left with slide-from-left animation\n- LayoutB: centered with scale bounce animation\n- LayoutC: underline wipe animation\n- LayoutD: split background with clip-path animation\n\nBulletScene cycles through these layouts based on bullet index.\nUpdated Composition to render bullet sequences after intro and headline.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npm run build:*)",
+      "Bash(npm ls:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add Vercel edge function with GitHub PR fetching\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}
