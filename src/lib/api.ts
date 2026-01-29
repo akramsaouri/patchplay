@@ -1,16 +1,33 @@
 import type { VideoScript } from '../types';
 
 export async function analyzePR(prUrl: string): Promise<VideoScript> {
-  const response = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prUrl }),
-  });
+  let response: Response;
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to analyze PR');
+  try {
+    response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prUrl }),
+    });
+  } catch {
+    throw new Error('Network error - please check your connection');
   }
 
-  return response.json();
+  if (!response.ok) {
+    let errorMessage = 'Failed to analyze PR';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch {
+      // Response wasn't valid JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    throw new Error('Invalid response from server');
+  }
 }
